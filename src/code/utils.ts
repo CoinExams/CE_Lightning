@@ -1,4 +1,5 @@
-import { NostrEvent } from "nostr-tools";
+import { bech32 } from 'bech32';
+import { NostrEvent, nip19, utils } from "nostr-tools";
 
 const
     RELAYS_LIST = [
@@ -54,6 +55,69 @@ const eventRelays = (event: NostrEvent): string[] => {
     return [];
 };
 
+const
+    isValidHexPubkey = /^[0-9a-fA-F]{64}$/,
+    isValidPubKey = /^(npub1|nprofile1)[0-9a-z]{57,1024}$/i,
+    /** @returns HEX pubkey */
+    npubToHex = (npub: string): string => {
+        try {
+
+            if (!npub) return ``
+
+            // if hex
+            if (isValidHexPubkey.test(npub))
+                return npub
+
+            // if not pub key 
+            if (!isValidPubKey.test(npub))
+                return ``
+
+            // convert to hex
+            const
+                { prefix, words } = bech32.decode(npub, 90),
+                data = bech32.fromWords(words);
+
+            if (prefix == `npub`)
+                return Buffer.from(data).toString(`hex`);
+
+            if (prefix === 'nprofile') {
+                let pointer = 0;
+                while (pointer < data.length) {
+                    const
+                        type = data[pointer],
+                        length = data[pointer + 1],
+                        value = data.slice(pointer + 2, pointer + 2 + length);
+                    if (type === 0)
+                        return Buffer.from(value).toString('hex');
+                    pointer += 2 + length;
+                };
+            };
+        } catch (e) {
+            console.log(`hexPubKey failed`, e);
+        };
+        return ``;
+    },
+    nsecToHex = (nsec: string): string => {
+        try {
+            const { type, data } = nip19.decode(nsec);
+            if (type == `nsec`)
+                return Buffer.from(data).toString('hex');
+        } catch (e) {
+            console.log(`nsecToHex failed`, e);
+        };
+        return ``
+    },
+    hexToBytes = (hex: string): Uint8Array | undefined => {
+        try {
+            return utils.hexToBytes(hex.padStart(64, '0'));
+        } catch (e) {
+            console.log(`hexToBytes failed`, e);
+        };
+    },
+    nsecToBytes = (nsec: string): Uint8Array | undefined => {
+        return hexToBytes(nsecToHex(nsec))
+    };
+
 export {
     RELAYS_LIST,
     lightningAddressRegex,
@@ -63,4 +127,8 @@ export {
     msatToSat,
     parseNostrEvent,
     eventRelays,
+    npubToHex,
+    nsecToHex,
+    hexToBytes,
+    nsecToBytes,
 };

@@ -15,7 +15,7 @@ lightning/
     ├── client.ts         # startLightning() factory → LightningClient
     ├── payment.ts        # Convenience wrappers (optional DI)
     ├── types.ts          # All type definitions
-    └── utils.ts          # Helpers (regex, timers, nostr parsing)
+    └── utils.ts          # Helpers (regex, timers, nostr parsing, key conversion)
 ```
 
 ## Getting Started
@@ -23,11 +23,11 @@ lightning/
 ### 1. Create a client
 
 ```ts
-import { startLightning } from "./lightning";
+import { startLightning, nsecToBytes, npubToHex } from "./lightning";
 
 const client = startLightning({
-  serverPrvKeyBytes: new Uint8Array(Buffer.from("0123456789ab....", "hex")),
-  serverPubKeyHex: "abc123...",
+  serverPrvKeyBytes: nsecToBytes("nsec1..."),
+  serverPubKeyHex: npubToHex("npub1..."),
 });
 ```
 

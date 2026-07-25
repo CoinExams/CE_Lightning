@@ -1,5 +1,13 @@
 ## CoinExams Lightning Payment SDK - Change Log
 
+## v1.0.5
+
+- **New exports `npubToHex`, `nsecToHex`, `hexToBytes`, `nsecToBytes`** — Nostr key format conversion utilities added to `utils.ts`.
+  - `npubToHex(npub)` — converts npub/nprofile bech32 to hex pubkey.
+  - `nsecToHex(nsec)` — converts nsec bech32 to hex private key.
+  - `nsecToBytes(nsec)` — converts nsec bech32 directly to `Uint8Array` (for `serverPrvKeyBytes`).
+  - `hexToBytes(hex)` — converts hex string to `Uint8Array`.
+
 ## v1.0.4
 
 - **`payRequest` now takes a full LNURL address** — renamed `user` to `lnAddress` (e.g. `"alice@example.com"`); the `domain` parameter is no longer needed.
