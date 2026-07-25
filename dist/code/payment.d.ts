@@ -9,14 +9,10 @@ declare const checkPayment: ({ client, invoiceId, type, }: {
     invoiceId: string;
     type: PaymentDirection;
 }) => IncomingPayment | OutgoingPaymentLN | undefined;
-declare const sendPayment: ({ client, amountSat, opts, }: {
+declare const sendPayment: ({ client, amountSat, address, }: {
     client: LightningClient;
     amountSat: number;
-    opts?: {
-        onChain?: boolean;
-        lightningAddress?: string;
-        onChainAddress?: string;
-    };
+    address: string;
 }) => SentPayment | undefined;
 declare const getBalance: ({ client, }: {
     client: LightningClient;

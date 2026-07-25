@@ -33,13 +33,13 @@ const checkPayment = ({
 const sendPayment = ({
     client,
     amountSat,
-    opts,
+    address,
 }: {
     client: LightningClient;
     amountSat: number;
-    opts?: { onChain?: boolean; lightningAddress?: string; onChainAddress?: string };
+    address: string;
 }): SentPayment | undefined =>
-    client.payInvoice({ amountSat, ...opts });
+    client.payInvoice({ amountSat, address });
 
 const getBalance = ({
     client,

@@ -2,7 +2,7 @@ import { VerifiedEvent } from "nostr-tools";
 
 interface PaymentMakeRequest {
     amountSat: number;
-    onChain?: boolean;
+    address: string;
 }
 
 interface PaymentNewRequest {
@@ -124,13 +124,47 @@ interface NewInvoiceResponse {
 }
 
 interface LightningClient {
-    newInvoice(opts: PaymentNewRequest): PaymentInvoiceDetails | undefined;
-    checkInvoice(opts: PaymentCheck): IncomingPayment | OutgoingPaymentLN | undefined;
-    payInvoice(opts: PaymentMakeRequest & { lightningAddress?: string; onChainAddress?: string }): SentPayment | undefined;
-    nodeQuery<T extends CacheData>(opts: LNDataRequest): T | undefined;
-    zapSign(opts: { nostr: string; bolt11: string }): { signedReceipt: VerifiedEvent; relays: string[] } | undefined;
-    zapPublish(opts: { nostr: string; bolt11: string; invoiceId: string }): Promise<void>;
-    payRequest(opts: { user: string; amountMsat: number; nostr?: string }): { invoice: LnurlPayResponse; invoiceId: string } | undefined;
+    /** Create a new Lightning invoice for receiving payments */
+    newInvoice({ amountSat, description }: PaymentNewRequest): PaymentInvoiceDetails | undefined;
+    /** Check if a previously created invoice has been paid */
+    checkInvoice({ invoiceId, type }: PaymentCheck): IncomingPayment | OutgoingPaymentLN | undefined;
+    /** Send a Lightning or on-chain payment to an address */
+    payInvoice({ amountSat, address }: PaymentMakeRequest): SentPayment | undefined;
+    /** Query Phoenixd node state (balance, payments, info) */
+    nodeQuery<T extends CacheData>({ type, params }: LNDataRequest): T | undefined;
+    /** Sign a Nostr zap receipt (kind 9735) without publishing */
+    zapSign({ nostr, bolt11 }: ZapSignRequest): ZapSignResponse | undefined;
+    /** Poll invoice until paid, then sign and publish a Nostr zap receipt */
+    zapPublish({ nostr, bolt11, invoiceId }: ZapPublishRequest): Promise<void>;
+    /** Generate an LNURL-pay invoice, optionally with zap signing */
+    payRequest({ user, amountMsat, nostr }: PayRequest): PayRequestResponse | undefined;
+}
+
+interface ZapSignRequest {
+    nostr: string;
+    bolt11: string;
+}
+
+interface ZapSignResponse {
+    signedReceipt: VerifiedEvent;
+    relays: string[];
+}
+
+interface ZapPublishRequest {
+    nostr: string;
+    bolt11: string;
+    invoiceId: string;
+}
+
+interface PayRequest {
+    user: string;
+    amountMsat: number;
+    nostr?: string;
+}
+
+interface PayRequestResponse {
+    invoice: LnurlPayResponse;
+    invoiceId: string;
 }
 
 interface LnurlPayRequest {
@@ -194,4 +228,9 @@ export type {
     LnurlPayResponse,
     UserStoredPayment,
     UserSeverData,
+    ZapSignRequest,
+    ZapSignResponse,
+    ZapPublishRequest,
+    PayRequest,
+    PayRequestResponse,
 };

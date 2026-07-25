@@ -23,4 +23,9 @@ export type {
     LNBalance,
     OutgoingPaymentLN,
     SentPayment,
+    ZapSignRequest,
+    ZapSignResponse,
+    ZapPublishRequest,
+    PayRequest,
+    PayRequestResponse,
 } from "./code/types";

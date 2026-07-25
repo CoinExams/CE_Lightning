@@ -61,15 +61,14 @@ const payment = client.checkInvoice({
 ```ts
 const sent = client.payInvoice({
   amountSat: 500,
-  lightningAddress: "user@example.com",
+  address: "user@example.com",
 });
 // → { recipientAmountSat: 500, paymentHash: "...", ... }
 
-// On-chain:
+// On-chain (auto-detected by address format):
 const onchain = client.payInvoice({
   amountSat: 10000,
-  onChain: true,
-  onChainAddress: "bc1...",
+  address: "bc1...",
 });
 ```
 
@@ -120,10 +119,10 @@ import {
   getBalance,
 } from "./lightning";
 
-const invoice = createInvoice(client, 1000);
-const paid = checkPayment(client, invoiceId, PaymentDirection.Incoming);
-const sent = sendPayment(client, 500, { lightningAddress: "u@ex.com" });
-const bal = getBalance(client);
+const invoice = createInvoice({ client, amountSat: 1000 });
+const paid = checkPayment({ client, invoiceId, type: PaymentDirection.Incoming });
+const sent = sendPayment({ client, amountSat: 500, address: "u@ex.com" });
+const bal = getBalance({ client });
 ```
 
 ## Environment Variables (example)
