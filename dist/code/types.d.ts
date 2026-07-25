@@ -111,7 +111,7 @@ interface LightningClient {
     /** Poll invoice until paid, then sign and publish a Nostr zap receipt */
     zapPublish({ nostr, bolt11, invoiceId }: ZapPublishRequest): Promise<void>;
     /** Generate an LNURL-pay invoice, optionally with zap signing */
-    payRequest({ user, amountMsat, nostr }: PayRequest): PayRequestResponse | undefined;
+    payRequest({ lnAddress, amountMsat, nostr }: PayRequest): PayRequestResponse | undefined;
 }
 interface ZapSignRequest {
     nostr: string;
@@ -127,7 +127,7 @@ interface ZapPublishRequest {
     invoiceId: string;
 }
 interface PayRequest {
-    user: string;
+    lnAddress: string;
     amountMsat: number;
     nostr?: string;
 }

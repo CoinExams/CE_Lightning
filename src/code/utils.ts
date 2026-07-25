@@ -1,6 +1,19 @@
 import { NostrEvent } from "nostr-tools";
 
 const
+    RELAYS_LIST = [
+        "wss://thecitadel.nostr1.com",
+        "wss://relay.primal.net",
+        "wss://relay.noswhere.com",
+        "wss://relay.momostr.pink",
+        "wss://relay.fountain.fm",
+        "wss://relay.damus.io",
+        "wss://relay.bitcoinpark.com",
+        "wss://purplepag.es",
+        "wss://nostr.wine",
+        "wss://nostr.stakey.net",
+        "wss://nos.lol"
+    ],
     lightningAddressRegex = /^[a-z0-9._-]+@[a-z0-9.-]+\.[a-z]{2,}$/i,
     tN = () => Date.now(),
     seoDt = () => new Date().toISOString(),
@@ -42,6 +55,7 @@ const eventRelays = (event: NostrEvent): string[] => {
 };
 
 export {
+    RELAYS_LIST,
     lightningAddressRegex,
     tN,
     seoDt,

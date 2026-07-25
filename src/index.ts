@@ -1,5 +1,5 @@
 export { startLightning } from "./code/client";
-export { msatToSat } from "./code/utils";
+export { msatToSat, RELAYS_LIST } from "./code/utils";
 export {
     createInvoice,
     checkPayment,

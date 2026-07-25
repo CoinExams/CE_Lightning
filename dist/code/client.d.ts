@@ -1,11 +1,10 @@
 import { LightningClient } from "./types";
-export declare const startLightning: ({ password: directPassword, credentialsPath, port, cacheDurationMs, serverPrvKeyBytes, serverPubKeyHex, defaultRelays, domain, }: {
-    password?: string;
-    credentialsPath?: string;
-    port: number;
-    cacheDurationMs: number;
+export declare const startLightning: ({ serverPrvKeyBytes, serverPubKeyHex, port, defaultRelays, cacheDurationMs, password: directPassword, credentialsPath, }: {
     serverPrvKeyBytes: Uint8Array;
     serverPubKeyHex: string;
-    defaultRelays: string[];
-    domain: string;
+    port?: number;
+    defaultRelays?: string[];
+    cacheDurationMs?: number;
+    password?: string;
+    credentialsPath?: string;
 }) => LightningClient;

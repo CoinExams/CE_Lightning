@@ -26,12 +26,8 @@ lightning/
 import { startLightning } from "./lightning";
 
 const client = startLightning({
-  port: 9740,
-  cacheDurationMs: 1000,
-  serverPrvKeyBytes: new Uint8Array([...]),
+  serverPrvKeyBytes: new Uint8Array(Buffer.from("0123456789ab....", "hex")),
   serverPubKeyHex: "abc123...",
-  defaultRelays: ["wss://relay.damus.io"],
-  domain: "example.com",
 });
 ```
 
@@ -89,7 +85,7 @@ const incoming = client.nodeQuery({
 
 ```ts
 const result = client.payRequest({
-  user: "alice",
+  lnAddress: "alice@example.com",
   amountMsat: 100000,       // 100 sats
   nostr: "<zap-request-json-or-base64>",  // optional
 });

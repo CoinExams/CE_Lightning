@@ -2,7 +2,6 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import {
     SimplePool,
-    VerifiedEvent,
     finalizeEvent,
     verifyEvent,
 } from "nostr-tools";
@@ -35,26 +34,25 @@ import {
     msatToSat,
     parseNostrEvent,
     eventRelays,
+    RELAYS_LIST,
 } from "./utils";
 
 export const startLightning = ({
-    password: directPassword,
-    credentialsPath = `/root/.phoenix/credentials.json`,
-    port,
-    cacheDurationMs,
     serverPrvKeyBytes,
     serverPubKeyHex,
-    defaultRelays,
-    domain,
+    port = 9740,
+    defaultRelays = RELAYS_LIST,
+    cacheDurationMs = 500,
+    password: directPassword,
+    credentialsPath = `/root/.phoenix/credentials.json`,
 }: {
-    password?: string;
-    credentialsPath?: string;
-    port: number;
-    cacheDurationMs: number;
     serverPrvKeyBytes: Uint8Array;
     serverPubKeyHex: string;
-    defaultRelays: string[];
-    domain: string;
+    port?: number;
+    defaultRelays?: string[];
+    cacheDurationMs?: number;
+    password?: string;
+    credentialsPath?: string;
 }): LightningClient => {
 
     const
@@ -249,7 +247,7 @@ export const startLightning = ({
             };
         },
         payRequest = ({
-            user,
+            lnAddress,
             amountMsat,
             nostr,
         }: PayRequest): PayRequestResponse | undefined => {
@@ -258,7 +256,6 @@ export const startLightning = ({
             if (typeof amountSat != `number` || amountSat < 1) return;
 
             const
-                lnAddress = `${user}@${domain}`,
                 {
                     invoiceString: bolt11 = ``,
                     invoiceId = ``,
