@@ -1,4 +1,5 @@
 export { startLightning } from "./code/client";
+export { msatToSat } from "./code/utils";
 export {
     createInvoice,
     checkPayment,
@@ -7,9 +8,19 @@ export {
     getIncomingPayments,
     getOutgoingPayments,
 } from "./code/payment";
-export type {
+export {
     PaymentDirection,
+    LNDataType,
+} from "./code/types";
+export type {
     IncomingPayment,
     UserStoredPayment,
     UserSeverData,
+    PaymentMakeRequest,
+    PaymentNewRequest,
+    PaymentInvoiceDetails,
+    LNDataParams,
+    LNBalance,
+    OutgoingPaymentLN,
+    SentPayment,
 } from "./code/types";

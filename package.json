@@ -1,6 +1,6 @@
 {
   "name": "@coinexams/lightning",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "CoinExams Lightning Payment SDK - A standalone Lightning Network client module that wraps a local Phoenixd node REST API.",
   "main": "dist/node/lightning.node.min.js",
   "module": "dist/node/lightning.node.min.js",
