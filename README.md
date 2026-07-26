@@ -8,20 +8,21 @@ See [changes.md](changes.md).
 
 ## Quick Start
 
-1. Install package
+### 1. Install package
 
 ```bash
 yarn add @coinexams/lightning
 ```
 
-2. Setup phoenixd (requires Linux with systemd)
+### 2. Setup phoenixd
+requires Linux with systemd
 
 ```bash
 npx @coinexams/lightning setup
 # Optional: --seed "<12-or-24-word phrase>" --port 9740
 ```
 
-3. Integrate zap code
+### 3. Integrate zap code
 
 ```ts
 import { startLightning, nsecToBytes, npubToHex } from "@coinexams/lightning";

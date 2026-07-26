@@ -12725,7 +12725,16 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.celightningCli = void 0;
 const node_fs_1 = __webpack_require__(24);
 const index_1 = __webpack_require__(26);
-const USAGE = `Usage: npx @coinexams/lightning setup [--seed <phrase>] [--port <number>]`, BIP39_WORD_COUNTS = new Set([12, 15, 18, 21, 24]), BIP39_REGEX = /^[a-z]+( [a-z]+)+$/, celightningCli = (argv) => {
+const USAGE = [
+    `Usage: npx @coinexams/lightning <command> [options]`,
+    ``,
+    `Commands:`,
+    `  setup [--seed <phrase>] [--port <number>]  Setup Phoenixd`,
+    ``,
+    `Options:`,
+    `  --help, -h     Show this help message`,
+    `  --version, -v  Show version number`,
+].join(`\n`), BIP39_WORD_COUNTS = new Set([12, 15, 18, 21, 24]), BIP39_REGEX = /^[a-z]+( [a-z]+)+$/, celightningCli = (argv) => {
     const subcmd = argv[2] || ``, rawArgs = argv.slice(3), sepIdx = rawArgs.indexOf(`--`), args = sepIdx !== -1
         ? rawArgs.slice(0, sepIdx)
         : rawArgs;
@@ -12735,7 +12744,7 @@ const USAGE = `Usage: npx @coinexams/lightning setup [--seed <phrase>] [--port <
     }
     ;
     if (subcmd === `--version` || subcmd === `-v`) {
-        console.log("1.0.9");
+        console.log("1.1.0");
         process.exit(0);
     }
     ;

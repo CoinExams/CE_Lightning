@@ -4,7 +4,16 @@ import { ensurePhoenixd } from "./index";
 declare const __VERSION__: string;
 
 const
-    USAGE = `Usage: npx @coinexams/lightning setup [--seed <phrase>] [--port <number>]`,
+    USAGE = [
+        `Usage: npx @coinexams/lightning <command> [options]`,
+        ``,
+        `Commands:`,
+        `  setup [--seed <phrase>] [--port <number>]  Setup Phoenixd`,
+        ``,
+        `Options:`,
+        `  --help, -h     Show this help message`,
+        `  --version, -v  Show version number`,
+    ].join(`\n`),
 
     BIP39_WORD_COUNTS = new Set([12, 15, 18, 21, 24]),
 
