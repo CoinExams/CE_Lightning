@@ -1,7 +1,16 @@
 import { VerifiedEvent } from "nostr-tools";
+interface PhoenixConfig {
+    port: number;
+    password: string;
+}
+interface PhoenixSetupOptions {
+    seedPhrase?: string;
+    port?: number;
+}
 interface PaymentMakeRequest {
     amountSat: number;
     address: string;
+    feeRateSatByte?: number;
 }
 interface PaymentNewRequest {
     amountSat: number;
@@ -160,4 +169,4 @@ interface UserSeverData {
 }
 type CacheData = LNBalance | NewInvoiceResponse | PaymentDoneResponse | (IncomingPayment | OutgoingPayment)[] | NodeInfo | SentPayment | string;
 export { PaymentDirection, LNDataType, };
-export type { CacheData, PaymentMakeRequest, PaymentNewRequest, PaymentInvoiceDetails, PaymentCheck, LNDataParams, LNDataRequest, LNBalance, IncomingPayment, OutgoingPaymentBase, OutgoingPayment, OutgoingPaymentLiquidity, NodeInfo, SentPayment, PaymentDoneResponse, NewInvoiceResponse, LightningClient, LnurlPayRequest, LnurlPayResponse, UserStoredPayment, UserSeverData, ZapSignRequest, ZapSignResponse, ZapPublishRequest, ZapRequest, ZapRequestResponse, };
+export type { PhoenixConfig, PhoenixSetupOptions, CacheData, PaymentMakeRequest, PaymentNewRequest, PaymentInvoiceDetails, PaymentCheck, LNDataParams, LNDataRequest, LNBalance, IncomingPayment, OutgoingPaymentBase, OutgoingPayment, OutgoingPaymentLiquidity, NodeInfo, SentPayment, PaymentDoneResponse, NewInvoiceResponse, LightningClient, LnurlPayRequest, LnurlPayResponse, UserStoredPayment, UserSeverData, ZapSignRequest, ZapSignResponse, ZapPublishRequest, ZapRequest, ZapRequestResponse, };

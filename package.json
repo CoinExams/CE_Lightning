@@ -1,8 +1,11 @@
 {
   "name": "@coinexams/lightning",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "CoinExams Lightning Payment SDK - A standalone Lightning Network client module that wraps a local Phoenixd node REST API.",
   "main": "dist/node/lightning.node.min.js",
+  "bin": {
+    "celightning": "dist/setup/cli.js"
+  },
   "module": "dist/node/lightning.node.min.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -22,7 +25,7 @@
     "Bitcoin"
   ],
   "author": "CoinExams",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/CoinExams/CE_Lightning/issues"
   },

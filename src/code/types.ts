@@ -1,8 +1,19 @@
 import { VerifiedEvent } from "nostr-tools";
 
+interface PhoenixConfig {
+    port: number;
+    password: string;
+}
+
+interface PhoenixSetupOptions {
+    seedPhrase?: string;
+    port?: number;
+}
+
 interface PaymentMakeRequest {
     amountSat: number;
     address: string;
+    feeRateSatByte?: number;
 }
 
 interface PaymentNewRequest {
@@ -209,6 +220,8 @@ export {
 };
 
 export type {
+    PhoenixConfig,
+    PhoenixSetupOptions,
     CacheData,
     PaymentMakeRequest,
     PaymentNewRequest,

@@ -6,6 +6,12 @@
 - Chain all `const` declarations into a single statement with comma separators
 - Export at declaration site or use `export { ... }` at bottom of file
 - Keep lines short and readable; group related logic with blank lines
+- Keep code narrow and readable — prefer concise patterns that fit in limited width
+- Break lines aggressively so each line is readable on very narrow screens (~30 chars)
+  - Split imports across lines: one name per line
+  - Break long arg lists, ternaries, and method chains onto separate lines
+  - Use chained const with each binding starting on a new line
+  - Template literal content (shell scripts, file contents) is exempt
 - Use early returns (`if (!x) return;`) over nested braces
 
 ## Naming
@@ -38,5 +44,7 @@
 ## Changes
 - Never rename functions under older package version entries in `changes.md`
 - Always add new version entry at the top of `changes.md`
+- `changes.md` entries describe only user-facing changes — never internal implementation details
 - Update `README.md` examples to match current API
 - Never stage changes with `git add`; keep all modifications unstaged
+- Never run `npm run build` or any build command

@@ -1,5 +1,9 @@
 ## CoinExams Lightning Payment SDK - Change Log
 
+## v1.0.8
+
+- Run `npx @coinexams/lightning setup` to auto-install, configure, and start phoenixd. Supports `--seed` and `--port` flags.
+
 ## v1.0.7
 
 - **New `zapProcess` method** — combines `zapRequest` + `zapPublish` into a single call; returns the invoice result.

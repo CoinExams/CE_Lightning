@@ -1,5 +1,4 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
 import {
     SimplePool,
     finalizeEvent,
@@ -37,33 +36,32 @@ import {
     eventRelays,
     RELAYS_LIST,
 } from "./utils";
+import { readPhoenixConfig } from "../setup/config";
 
 /** Create a LightningClient that talks to a local Phoenixd node.
- * Returns `undefined` if credentials cannot be loaded. */
+ * Assumes phoenixd is already installed and running (use
+ * `ensurePhoenixd` to set it up). Returns `undefined` if credentials
+ * cannot be loaded. */
 export const startLightning = ({
     serverPrvKeyBytes,
     serverPubKeyHex,
-    port = 9740,
     defaultRelays = RELAYS_LIST,
     cacheDurationMs = 500,
-    password: directPassword,
-    credentialsPath = `/root/.phoenix/credentials.json`,
 }: {
     serverPrvKeyBytes: Uint8Array;
     serverPubKeyHex: string;
-    port?: number;
     defaultRelays?: string[];
     cacheDurationMs?: number;
-    password?: string;
-    credentialsPath?: string;
-}): LightningClient => {
+}): LightningClient | undefined => {
 
     const
+        phoenixConfig = readPhoenixConfig();
+    if (phoenixConfig?.port == undefined) return;
+
+    const
+        { port, password } = phoenixConfig,
         API_URL = `http://localhost:${port}`,
         cache: { [query: string]: { time: number; data: CacheData } } = {},
-        password = directPassword || JSON.parse(
-            readFileSync(credentialsPath, `utf-8`)
-        )?.password,
         nodeCLI = <T>(
             path: string,
             method: `GET` | `POST`,
@@ -112,6 +110,7 @@ export const startLightning = ({
         fundsWithdraw = ({
             amountSat,
             address,
+            feeRateSatByte = 5,
         }: PaymentMakeRequest): SentPayment | undefined => {
             try {
                 if (typeof amountSat != `number` || !address) return;
@@ -120,9 +119,9 @@ export const startLightning = ({
                     command = isLightning ? `paylnaddress` : `sendtoaddress`,
                     result = nodeCLI<PaymentDoneResponse>(`/${command}`, `POST`, {
                         address,
-                        amountSat: amountSat,
+                        amountSat,
                         ...isLightning ? {} : {
-                            feerateSatByte: 5
+                            feerateSatByte: feeRateSatByte,
                         },
                     });
                 if (result?.recipientAmountSat)
@@ -311,7 +310,7 @@ export const startLightning = ({
                 nostr: nostrEvent,
                 bolt11: result.invoice.pr,
                 invoiceId: result.invoiceId,
-            });
+            }).catch(e => console.error(seoDt(), `zapProcess publish failed`, e));
 
             return result;
         };
