@@ -1,5 +1,10 @@
 ## CoinExams Lightning Payment SDK - Change Log
 
+## v1.0.7
+
+- **New `zapProcess` method** — combines `zapRequest` + `zapPublish` into a single call; returns the invoice result.
+- **Renamed `nostr` → `nostrEvent`** in `ZapRequest` interface for clarity.
+
 ## v1.0.6
 
 - **API renaming for consistency** — all client methods now use descriptive, consistent names:

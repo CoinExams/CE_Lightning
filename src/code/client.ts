@@ -10,7 +10,7 @@ import {
     PaymentNewRequest,
     PaymentCheck,
     IncomingPayment,
-    OutgoingPaymentLN,
+    OutgoingPayment,
     PaymentMakeRequest,
     SentPayment,
     PaymentDoneResponse,
@@ -156,9 +156,9 @@ export const startLightning = ({
         invoiceStatus = ({
             invoiceId,
             type,
-        }: PaymentCheck): IncomingPayment | OutgoingPaymentLN | undefined => {
+        }: PaymentCheck): IncomingPayment | OutgoingPayment | undefined => {
             try {
-                const txs = fundsData<(IncomingPayment | OutgoingPaymentLN)[]>({
+                const txs = fundsData<(IncomingPayment | OutgoingPayment)[]>({
                     type: `payments/${type}`,
                     params: { limit: 30 },
                 });
@@ -171,16 +171,16 @@ export const startLightning = ({
             fundsData<LNBalance>({ type: `getbalance` }),
 
         fundsIncoming = (count = 30): IncomingPayment[] | undefined =>
-            fundsData<(IncomingPayment | OutgoingPaymentLN)[]>({
+            fundsData<(IncomingPayment | OutgoingPayment)[]>({
                 type: `payments/incoming`,
                 params: { limit: count },
             }) as IncomingPayment[] | undefined,
 
-        fundsOutgoing = (count = 30): OutgoingPaymentLN[] | undefined =>
-            fundsData<(IncomingPayment | OutgoingPaymentLN)[]>({
+        fundsOutgoing = (count = 30): OutgoingPayment[] | undefined =>
+            fundsData<(IncomingPayment | OutgoingPayment)[]>({
                 type: `payments/outgoing`,
                 params: { limit: count },
-            }) as OutgoingPaymentLN[] | undefined,
+            }) as OutgoingPayment[] | undefined,
 
         zapSign = ({
             nostr,
@@ -267,7 +267,7 @@ export const startLightning = ({
         zapRequest = ({
             lnAddress,
             amountMsat,
-            nostr,
+            nostrEvent,
         }: ZapRequest): ZapRequestResponse | undefined => {
 
             const amountSat = msatToSat(amountMsat);
@@ -279,7 +279,7 @@ export const startLightning = ({
                     invoiceId = ``,
                 } = invoiceNew({
                     amountSat,
-                    description: `${nostr ? `Zap` : `Payment`} to ${lnAddress}`,
+                    description: `${nostrEvent ? `Zap` : `Payment`} to ${lnAddress}`,
                 }) || {};
             if (!bolt11) return;
 
@@ -288,12 +288,32 @@ export const startLightning = ({
                 routes: []
             };
 
-            if (nostr) {
-                const { signedReceipt } = zapSign({ nostr, bolt11 }) || {};
+            if (nostrEvent) {
+                const { signedReceipt } = zapSign({ nostr: nostrEvent, bolt11 }) || {};
                 if (!signedReceipt) return;
             };
 
             return { invoice, invoiceId };
+        },
+        zapProcess = ({
+            lnAddress,
+            amountMsat,
+            nostrEvent,
+        }: ZapRequest): ZapRequestResponse | undefined => {
+
+            const result = zapRequest({
+                lnAddress,
+                amountMsat,
+                nostrEvent,
+            });
+
+            if (result && nostrEvent) zapPublish({
+                nostr: nostrEvent,
+                bolt11: result.invoice.pr,
+                invoiceId: result.invoiceId,
+            });
+
+            return result;
         };
 
     return {
@@ -304,8 +324,6 @@ export const startLightning = ({
         fundsBalance,
         fundsIncoming,
         fundsOutgoing,
-        zapRequest,
-        zapSign,
-        zapPublish,
+        zapProcess,
     };
 };

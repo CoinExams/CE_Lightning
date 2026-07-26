@@ -2,17 +2,21 @@
 
 Lightning Network client wrapping a [Phoenixd](https://phoenix.acinq.co/) node REST API. Create invoices, send payments, query balances, handle LNURL-pay requests, and publish Nostr Zap receipts.
 
-## Installation
+## Change Log
 
-```bash
-npm install @coinexams/lightning
-```
+See [changes.md](changes.md).
+
+## Quick Start
+
+1. Install Phoenixd using [installation script](#phoenixd-setup) below
+
+2. Install package
 
 ```bash
 yarn add @coinexams/lightning
 ```
 
-## Quick Start
+3. Integrate zap code
 
 ```ts
 import { startLightning, nsecToBytes, npubToHex } from "@coinexams/lightning";
@@ -21,16 +25,19 @@ const client = startLightning({
   serverPrvKeyBytes: nsecToBytes("nsec1..."),
   serverPubKeyHex: npubToHex("npub1..."),
 });
+
+// Full zap workflow: request invoice → poll until paid → publish kind-9735 receipt
+const zap = client.zapProcess({
+  lnAddress: `alice@example.com`,
+  amountMsat: 100_000,
+  nostrEvent: `<zap-request-json>`,
+});
+// → { invoice: { pr: "lnbc...", routes: [] }, invoiceId: "..." }
 ```
 
 ## Error Handling
 
-All methods return `undefined` on failure and log via `console.error` with an ISO timestamp prefix. Check for `undefined` to detect failures:
-
-```ts
-const invoice = client.invoiceNew({ amountSat: 100 });
-if (!invoice) return;
-```
+All methods return `undefined` on failure and log via `console.error` with an ISO timestamp prefix.
 
 ## Invoices
 
@@ -46,10 +53,10 @@ const payment = client.invoiceStatus({
   invoiceId: "abc...",
   type: PaymentDirection.Incoming,
 });
-// → IncomingPayment | undefined
+// → IncomingPayment | OutgoingPayment | undefined
 ```
 
-## Send Payments
+## Payments
 
 ```ts
 // Lightning address (auto-detected by address format)
@@ -64,63 +71,25 @@ const onchain = client.fundsWithdraw({
   amountSat: 10000,
   address: "bc1...",
 });
-```
 
-## Balance & Payment History
-
-```ts
 // Full balance details
-const balance = client.fundsData({ type: "getbalance" });
+const balance = client.fundsBalance();
 // → { balanceSat: 50000, feeCreditSat: 100 }
 
-// Quick balance helper
-const bal = client.fundsBalance();
-// → { balanceSat: 50000, feeCreditSat: 100 }
+// Incoming payments
+const recentIncoming = client.fundsIncoming(10);
+// → IncomingPayment[]
 
-// Payment history
+// Outgoing payments
+const recentOutgoing = client.fundsOutgoing(10);
+// → OutgoingPayment[]
+
+// Custom data query (example)
 const incoming = client.fundsData({
   type: "payments/incoming",
   params: { limit: 10 },
 });
 // → IncomingPayment[]
-
-const recentIncoming = client.fundsIncoming(10);
-// → IncomingPayment[]
-
-const recentOutgoing = client.fundsOutgoing(10);
-// → OutgoingPaymentLN[]
-```
-
-## LNURL-Pay & Nostr Zap
-
-```ts
-// Request an invoice from a Lightning address
-const result = client.zapRequest({
-  lnAddress: "alice@example.com",
-  amountMsat: 100000,       // 100 sats
-  nostr: "<zap-request-json-or-base64>",  // optional
-});
-// → { invoice: { pr: "lnbc...", routes: [] }, invoiceId: "..." }
-
-// Poll until paid, then sign & publish a kind-9735 Zap receipt
-await client.zapPublish({
-  nostr: "<zap-request>",
-  bolt11: "lnbc...",
-  invoiceId: "abc...",
-});
-```
-
-## Environment Variables
-
-```env
-PHOENIX_SERVER_PORT=9740
-ADDRESS_LIGHTNING=bob@example.com
-ADDRESS_ONCHAIN=bc1...
-SERVER_PRV_KEY=<hex-encoded-key>
-SERVER_PUB_KEY=<hex-encoded-pubkey>
-ADMIN_USERNAME=admin
-SERVER_USERNAME=server
-ADMIN_PASSWORD=<admin-pw>
 ```
 
 ## Phoenixd Setup
@@ -143,6 +112,21 @@ INSTALL_DIR="/opt/phoenix-setup"
 
 mkdir -p "$INSTALL_DIR" "$DATADIR"
 cd "$INSTALL_DIR"
+
+saveCredentials() {
+    if [ -f "$OUTPUT_FILE" ]; then return; fi
+    API_PASSWORD=$(grep "^http-password=" "$DATADIR/phoenix.conf" | cut -d'=' -f2 | tr -d '[:space:]')
+    jq -n --arg pw "$API_PASSWORD" --arg port "$PORT" \
+      '{password: $pw, port: $port}' > "$OUTPUT_FILE"
+    chmod 600 "$OUTPUT_FILE"
+}
+
+# --- CHECK EXISTING ---
+if [ -f "$INSTALL_DIR/phoenixd" ]; then
+    systemctl enable --now phoenixd
+    saveCredentials
+    exit 0
+fi
 
 # --- DEPENDENCIES ---
 apt-get update && apt-get install -y wget unzip curl jq
@@ -191,14 +175,8 @@ EOF
 # --- START & SAVE CREDENTIALS ---
 systemctl daemon-reload
 systemctl enable --now phoenixd
-
-API_PASSWORD=$(grep "^http-password=" "$DATADIR/phoenix.conf" | cut -d'=' -f2 | tr -d '[:space:]')
-jq -n --arg pw "$API_PASSWORD" --arg port "$PORT" \
-  '{password: $pw, port: $port}' > "$OUTPUT_FILE"
-chmod 600 "$OUTPUT_FILE"
+saveCredentials
 ```
-
-After setup, the password and port are saved in `/root/.phoenix/credentials.json` — pass them to `startLightning()`.
 
 ## Architecture
 
@@ -210,7 +188,3 @@ src/
     ├── types.ts   # All type definitions
     └── utils.ts   # Helpers (regex, timers, Nostr key conversion)
 ```
-
-## Change Log
-
-See [changes.md](changes.md).

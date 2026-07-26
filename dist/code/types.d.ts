@@ -61,7 +61,7 @@ interface OutgoingPaymentBase {
     completedAt: number;
     createdAt: number;
 }
-interface OutgoingPaymentLN extends OutgoingPaymentBase {
+interface OutgoingPayment extends OutgoingPaymentBase {
     subType: `lightning`;
     invoice: string;
     paymentHash: string;
@@ -101,7 +101,7 @@ interface LightningClient {
     /** Create a new Lightning invoice for receiving payments */
     invoiceNew({ amountSat, description }: PaymentNewRequest): PaymentInvoiceDetails | undefined;
     /** Check if a previously created invoice has been paid */
-    invoiceStatus({ invoiceId, type }: PaymentCheck): IncomingPayment | OutgoingPaymentLN | undefined;
+    invoiceStatus({ invoiceId, type }: PaymentCheck): IncomingPayment | OutgoingPayment | undefined;
     /** Send a Lightning or on-chain payment to an address */
     fundsWithdraw({ amountSat, address }: PaymentMakeRequest): SentPayment | undefined;
     /** Query Phoenixd node state (balance, payments, info) */
@@ -111,13 +111,9 @@ interface LightningClient {
     /** Fetch incoming payment history. Wraps `fundsData`. */
     fundsIncoming(count?: number): IncomingPayment[] | undefined;
     /** Fetch outgoing payment history. Wraps `fundsData`. */
-    fundsOutgoing(count?: number): OutgoingPaymentLN[] | undefined;
-    /** Sign a Nostr zap receipt (kind 9735) without publishing */
-    zapSign({ nostr, bolt11 }: ZapSignRequest): ZapSignResponse | undefined;
-    /** Poll invoice until paid, then sign and publish a Nostr zap receipt */
-    zapPublish({ nostr, bolt11, invoiceId }: ZapPublishRequest): Promise<void>;
-    /** Generate an LNURL-pay invoice for processing zap requests */
-    zapRequest({ lnAddress, amountMsat, nostr }: ZapRequest): ZapRequestResponse | undefined;
+    fundsOutgoing(count?: number): OutgoingPayment[] | undefined;
+    /** Generate an invoice and poll until paid, then publish a Nostr zap receipt. Returns the zap request result. */
+    zapProcess({ lnAddress, amountMsat, nostrEvent }: ZapRequest): ZapRequestResponse | undefined;
 }
 interface ZapSignRequest {
     nostr: string;
@@ -135,7 +131,7 @@ interface ZapPublishRequest {
 interface ZapRequest {
     lnAddress: string;
     amountMsat: number;
-    nostr?: string;
+    nostrEvent: string;
 }
 interface ZapRequestResponse {
     invoice: LnurlPayResponse;
@@ -162,6 +158,6 @@ interface UserSeverData {
     username: string;
     payments: UserStoredPayment[];
 }
-type CacheData = LNBalance | NewInvoiceResponse | PaymentDoneResponse | (IncomingPayment | OutgoingPaymentLN)[] | NodeInfo | SentPayment | string;
+type CacheData = LNBalance | NewInvoiceResponse | PaymentDoneResponse | (IncomingPayment | OutgoingPayment)[] | NodeInfo | SentPayment | string;
 export { PaymentDirection, LNDataType, };
-export type { CacheData, PaymentMakeRequest, PaymentNewRequest, PaymentInvoiceDetails, PaymentCheck, LNDataParams, LNDataRequest, LNBalance, IncomingPayment, OutgoingPaymentBase, OutgoingPaymentLN, OutgoingPaymentLiquidity, NodeInfo, SentPayment, PaymentDoneResponse, NewInvoiceResponse, LightningClient, LnurlPayRequest, LnurlPayResponse, UserStoredPayment, UserSeverData, ZapSignRequest, ZapSignResponse, ZapPublishRequest, ZapRequest, ZapRequestResponse, };
+export type { CacheData, PaymentMakeRequest, PaymentNewRequest, PaymentInvoiceDetails, PaymentCheck, LNDataParams, LNDataRequest, LNBalance, IncomingPayment, OutgoingPaymentBase, OutgoingPayment, OutgoingPaymentLiquidity, NodeInfo, SentPayment, PaymentDoneResponse, NewInvoiceResponse, LightningClient, LnurlPayRequest, LnurlPayResponse, UserStoredPayment, UserSeverData, ZapSignRequest, ZapSignResponse, ZapPublishRequest, ZapRequest, ZapRequestResponse, };

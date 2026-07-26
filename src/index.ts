@@ -21,7 +21,7 @@ export type {
     PaymentInvoiceDetails,
     LNDataParams,
     LNBalance,
-    OutgoingPaymentLN,
+    OutgoingPayment,
     SentPayment,
     ZapSignRequest,
     ZapSignResponse,
