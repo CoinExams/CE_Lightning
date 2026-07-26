@@ -446,6 +446,7 @@ const constants_1 = __webpack_require__(619);
 const utils_2 = __webpack_require__(239);
 const config_1 = __webpack_require__(78);
 const version_1 = __webpack_require__(46);
+const progress_1 = __webpack_require__(479);
 const semverLt = (a, b) => {
     const pa = a.replace(/^v/i, ``).split(`.`).map(Number), pb = b.replace(/^v/i, ``).split(`.`).map(Number);
     for (let i = 0; i < 3; i++) {
@@ -489,8 +490,8 @@ ensurePhoenixd = ({ seedPhrase, port = constants_1.PORT, } = {}) => {
             catch { }
             ;
             return false;
-        })(), installedVer = (0, version_1.readInstalledVersion)(), needsUpdate = installedVer !== undefined
-            && semverLt(installedVer, constants_1.PHOENIX_VERSION);
+        })(), installedVer = (0, version_1.readInstalledVersion)(), needsUpdate = installedVer === undefined
+            || semverLt(installedVer, constants_1.PHOENIX_VERSION);
         // skip download if installed and up-to-date
         if (!needsUpdate && (running || (0, utils_2.rootFileExists)(constants_1.BINARY_PATH))) {
             const config = (0, config_1.readPhoenixConfig)();
@@ -514,20 +515,11 @@ ensurePhoenixd = ({ seedPhrase, port = constants_1.PORT, } = {}) => {
             }
             ;
             // backup data before stopping
-            if (needsUpdate) {
+            if (needsUpdate && (0, utils_2.rootFileExists)(constants_1.CONF_PATH)) {
+                (0, progress_1.logStep)(`Backing up existing data...`);
                 const backupDir = `${constants_1.BACKUP_DIR}/phoenix-${Date.now()}`;
                 (0, utils_2.run)(`mkdir`, `-p`, backupDir);
                 (0, utils_2.run)(`cp`, `-r`, `${constants_1.DATADIR}/.`, backupDir);
-            }
-            ;
-            // stop old version before upgrading
-            if (running) {
-                try {
-                    (0, utils_2.run)(`systemctl`, `stop`, `phoenixd`);
-                    (0, utils_2.run)(`pkill`, `-x`, `phoenixd`);
-                }
-                catch { }
-                ;
             }
             ;
             // detect architecture for download URL
@@ -539,6 +531,7 @@ ensurePhoenixd = ({ seedPhrase, port = constants_1.PORT, } = {}) => {
             ;
             // download (fresh install or upgrade)
             if (!(0, utils_2.rootFileExists)(constants_1.BINARY_PATH) || needsUpdate) {
+                (0, progress_1.logStep)(`Downloading phoenixd v${constants_1.PHOENIX_VERSION}...`);
                 // clean old artifacts to prevent stale binaries
                 (0, utils_2.execRoot)(`bash`, [`-c`, `rm -rf "${constants_1.INSTALL_DIR}"/phoenixd-* "${constants_1.INSTALL_DIR}"/*.zip`], { stdio: `inherit` });
                 // install deps only if missing
@@ -584,7 +577,19 @@ ensurePhoenixd = ({ seedPhrase, port = constants_1.PORT, } = {}) => {
                 ;
             }
             ;
+            // stop old version before upgrading
+            if (running) {
+                (0, progress_1.logStep)(`Stopping old phoenixd...`);
+                try {
+                    (0, utils_2.run)(`systemctl`, `stop`, `phoenixd`);
+                    (0, utils_2.run)(`pkill`, `-x`, `phoenixd`);
+                }
+                catch { }
+                ;
+            }
+            ;
             // generate config via one-shot run
+            (0, progress_1.logStep)(`Generating configuration...`);
             if (!(0, utils_2.serviceCheck)(resolvedSeed, port)) {
                 console.error((0, utils_1.seoDt)(), `ensurePhoenixd failed`, `phoenixd config not generated`);
                 return;
@@ -601,10 +606,13 @@ ensurePhoenixd = ({ seedPhrase, port = constants_1.PORT, } = {}) => {
             // reload systemd
             (0, utils_2.run)(`systemctl`, `daemon-reload`);
             // start service
+            (0, progress_1.logStep)(`Starting phoenixd...`);
             (0, utils_2.run)(`systemctl`, `enable`, `--now`, `phoenixd`);
             // health check - verify phoenixd started and API is ready
             const started = (() => {
                 for (let i = 0; i < constants_1.HEALTH_RETRIES; i++) {
+                    (0, progress_1.updateInline)(`Waiting for phoenixd to be ready`
+                        + ` (${i + 1}/${constants_1.HEALTH_RETRIES})...`);
                     const phxConfig = (0, config_1.readPhoenixConfig)();
                     try {
                         (0, node_child_process_1.execFileSync)(`pgrep`, [`-x`, `phoenixd`], { stdio: `ignore` });
@@ -647,6 +655,27 @@ ensurePhoenixd = ({ seedPhrase, port = constants_1.PORT, } = {}) => {
     ;
 };
 exports.ensurePhoenixd = ensurePhoenixd;
+
+
+/***/ }),
+
+/***/ 479:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.updateInline = exports.logStep = void 0;
+const 
+/** Log a completed step to a new line */
+logStep = (msg) => {
+    process.stdout.write(`${msg}\n`);
+}, 
+/** Update current line in-place (no newline) */
+updateInline = (msg) => {
+    process.stdout.write(`\r\x1b[K${msg}`);
+};
+exports.logStep = logStep;
+exports.updateInline = updateInline;
 
 
 /***/ }),
@@ -787,6 +816,8 @@ const utils_1 = __webpack_require__(805);
 const constants_1 = __webpack_require__(619);
 const utils_2 = __webpack_require__(239);
 const readInstalledVersion = () => {
+    if (!(0, utils_2.rootFileExists)(constants_1.VERSION_FILE))
+        return;
     try {
         const content = (0, utils_2.readRootFile)(constants_1.VERSION_FILE);
         if (!content)
@@ -12704,7 +12735,7 @@ const USAGE = `Usage: npx @coinexams/lightning setup [--seed <phrase>] [--port <
     }
     ;
     if (subcmd === `--version` || subcmd === `-v`) {
-        console.log("1.0.8");
+        console.log("1.0.9");
         process.exit(0);
     }
     ;

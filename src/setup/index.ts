@@ -35,6 +35,10 @@ import {
     saveCredentials,
 } from "./config";
 import { readInstalledVersion } from "./version";
+import {
+    logStep,
+    updateInline,
+} from "./progress";
 
 const
     semverLt = (a: string, b: string): boolean => {
@@ -89,8 +93,8 @@ const
                     return false;
                 })(),
                 installedVer = readInstalledVersion(),
-                needsUpdate = installedVer !== undefined
-                    && semverLt(installedVer, PHOENIX_VERSION);
+                needsUpdate = installedVer === undefined
+                    || semverLt(installedVer, PHOENIX_VERSION);
 
             // skip download if installed and up-to-date
             if (!needsUpdate && (running || rootFileExists(BINARY_PATH))) {
@@ -124,18 +128,11 @@ const
                 };
 
                 // backup data before stopping
-                if (needsUpdate) {
+                if (needsUpdate && rootFileExists(CONF_PATH)) {
+                    logStep(`Backing up existing data...`);
                     const backupDir = `${BACKUP_DIR}/phoenix-${Date.now()}`;
                     run(`mkdir`, `-p`, backupDir);
                     run(`cp`, `-r`, `${DATADIR}/.`, backupDir);
-                };
-
-                // stop old version before upgrading
-                if (running) {
-                    try {
-                        run(`systemctl`, `stop`, `phoenixd`);
-                        run(`pkill`, `-x`, `phoenixd`);
-                    } catch { };
                 };
 
                 // detect architecture for download URL
@@ -151,6 +148,9 @@ const
 
                 // download (fresh install or upgrade)
                 if (!rootFileExists(BINARY_PATH) || needsUpdate) {
+                    logStep(
+                        `Downloading phoenixd v${PHOENIX_VERSION}...`
+                    );
 
                     // clean old artifacts to prevent stale binaries
                     execRoot(
@@ -222,7 +222,17 @@ const
 
                 };
 
+                // stop old version before upgrading
+                if (running) {
+                    logStep(`Stopping old phoenixd...`);
+                    try {
+                        run(`systemctl`, `stop`, `phoenixd`);
+                        run(`pkill`, `-x`, `phoenixd`);
+                    } catch { };
+                };
+
                 // generate config via one-shot run
+                logStep(`Generating configuration...`);
                 if (!serviceCheck(resolvedSeed, port)) {
                     console.error(
                         seoDt(),
@@ -249,11 +259,16 @@ const
                 run(`systemctl`, `daemon-reload`);
 
                 // start service
+                logStep(`Starting phoenixd...`);
                 run(`systemctl`, `enable`, `--now`, `phoenixd`);
 
                 // health check - verify phoenixd started and API is ready
                 const started = (() => {
                     for (let i = 0; i < HEALTH_RETRIES; i++) {
+                        updateInline(
+                            `Waiting for phoenixd to be ready`
+                            + ` (${i + 1}/${HEALTH_RETRIES})...`
+                        );
                         const phxConfig = readPhoenixConfig();
                         try {
                             execFileSync(`pgrep`, [`-x`, `phoenixd`], { stdio: `ignore` });
