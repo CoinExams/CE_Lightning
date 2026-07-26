@@ -1,13 +1,13 @@
 export { startLightning } from "./code/client";
-export { msatToSat, RELAYS_LIST, npubToHex, nsecToHex, hexToBytes, nsecToBytes } from "./code/utils";
 export {
-    createInvoice,
-    checkPayment,
-    sendPayment,
-    getBalance,
-    getIncomingPayments,
-    getOutgoingPayments,
-} from "./code/payment";
+    msatToSat,
+    RELAYS_LIST,
+    isLightningAddress,
+    npubToHex,
+    nsecToHex,
+    hexToBytes,
+    nsecToBytes,
+} from "./code/utils";
 export {
     PaymentDirection,
     LNDataType,
@@ -26,6 +26,6 @@ export type {
     ZapSignRequest,
     ZapSignResponse,
     ZapPublishRequest,
-    PayRequest,
-    PayRequestResponse,
+    ZapRequest,
+    ZapRequestResponse,
 } from "./code/types";

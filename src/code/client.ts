@@ -17,17 +17,18 @@ import {
     NewInvoiceResponse,
     LNDataRequest,
     LightningClient,
+    LNBalance,
     LnurlPayResponse,
     PaymentDirection,
     CacheData,
     ZapSignRequest,
     ZapSignResponse,
     ZapPublishRequest,
-    PayRequest,
-    PayRequestResponse,
+    ZapRequest,
+    ZapRequestResponse,
 } from "./types";
 import {
-    lightningAddressRegex,
+    isLightningAddress,
     tN,
     seoDt,
     delayCode,
@@ -37,6 +38,8 @@ import {
     RELAYS_LIST,
 } from "./utils";
 
+/** Create a LightningClient that talks to a local Phoenixd node.
+ * Returns `undefined` if credentials cannot be loaded. */
 export const startLightning = ({
     serverPrvKeyBytes,
     serverPubKeyHex,
@@ -88,7 +91,7 @@ export const startLightning = ({
                 console.error(seoDt(), `Lightning node ${path} failed:`, error instanceof Error ? error.message : String(error));
             };
         },
-        newInvoice = ({
+        invoiceNew = ({
             amountSat,
             description = ``,
         }: PaymentNewRequest): PaymentInvoiceDetails | undefined => {
@@ -103,17 +106,17 @@ export const startLightning = ({
                         invoiceId: result.paymentHash,   // Use this to check status later
                     };
             } catch (e) {
-                console.error(seoDt(), `newInvoice failed`, e);
+                console.error(seoDt(), `invoiceNew failed`, e);
             };
         },
-        payInvoice = ({
+        fundsWithdraw = ({
             amountSat,
             address,
         }: PaymentMakeRequest): SentPayment | undefined => {
             try {
                 if (typeof amountSat != `number` || !address) return;
                 const
-                    isLightning = lightningAddressRegex.test(address),
+                    isLightning = isLightningAddress.test(address),
                     command = isLightning ? `paylnaddress` : `sendtoaddress`,
                     result = nodeCLI<PaymentDoneResponse>(`/${command}`, `POST`, {
                         address,
@@ -125,10 +128,10 @@ export const startLightning = ({
                 if (result?.recipientAmountSat)
                     return result;
             } catch (e) {
-                console.error(seoDt(), `payInvoice failed`, e);
+                console.error(seoDt(), `fundsWithdraw failed`, e);
             };
         },
-        nodeQuery = <T extends CacheData>({
+        fundsData = <T extends CacheData>({
             type,
             params,
         }: LNDataRequest): T | undefined => {
@@ -147,23 +150,38 @@ export const startLightning = ({
                 if (data) cache[key] = { time, data };
                 return data;
             } catch (e) {
-                console.error(seoDt(), `nodeQuery failed`, e);
+                console.error(seoDt(), `fundsData failed`, e);
             };
         },
-        checkInvoice = ({
+        invoiceStatus = ({
             invoiceId,
             type,
         }: PaymentCheck): IncomingPayment | OutgoingPaymentLN | undefined => {
             try {
-                const txs = nodeQuery<(IncomingPayment | OutgoingPaymentLN)[]>({
+                const txs = fundsData<(IncomingPayment | OutgoingPaymentLN)[]>({
                     type: `payments/${type}`,
                     params: { limit: 30 },
                 });
                 return txs?.find(tx => tx?.paymentHash == invoiceId);
             } catch (e) {
-                console.error(seoDt(), `checkInvoice failed`, e);
+                console.error(seoDt(), `invoiceStatus failed`, e);
             };
         },
+        fundsBalance = (): LNBalance | undefined =>
+            fundsData<LNBalance>({ type: `getbalance` }),
+
+        fundsIncoming = (count = 30): IncomingPayment[] | undefined =>
+            fundsData<(IncomingPayment | OutgoingPaymentLN)[]>({
+                type: `payments/incoming`,
+                params: { limit: count },
+            }) as IncomingPayment[] | undefined,
+
+        fundsOutgoing = (count = 30): OutgoingPaymentLN[] | undefined =>
+            fundsData<(IncomingPayment | OutgoingPaymentLN)[]>({
+                type: `payments/outgoing`,
+                params: { limit: count },
+            }) as OutgoingPaymentLN[] | undefined,
+
         zapSign = ({
             nostr,
             bolt11,
@@ -227,7 +245,7 @@ export const startLightning = ({
                     await delayCode(delayInterval);
 
                     // check payment
-                    const payment = checkInvoice({
+                    const payment = invoiceStatus({
                         invoiceId,
                         type: PaymentDirection.Incoming,
                     }) as IncomingPayment;
@@ -246,11 +264,11 @@ export const startLightning = ({
                 console.error(seoDt(), `zapPublish failed`, e);
             };
         },
-        payRequest = ({
+        zapRequest = ({
             lnAddress,
             amountMsat,
             nostr,
-        }: PayRequest): PayRequestResponse | undefined => {
+        }: ZapRequest): ZapRequestResponse | undefined => {
 
             const amountSat = msatToSat(amountMsat);
             if (typeof amountSat != `number` || amountSat < 1) return;
@@ -259,7 +277,7 @@ export const startLightning = ({
                 {
                     invoiceString: bolt11 = ``,
                     invoiceId = ``,
-                } = newInvoice({
+                } = invoiceNew({
                     amountSat,
                     description: `${nostr ? `Zap` : `Payment`} to ${lnAddress}`,
                 }) || {};
@@ -279,12 +297,15 @@ export const startLightning = ({
         };
 
     return {
-        newInvoice,
-        checkInvoice,
-        payInvoice,
-        nodeQuery,
+        invoiceNew,
+        invoiceStatus,
+        fundsWithdraw,
+        fundsData,
+        fundsBalance,
+        fundsIncoming,
+        fundsOutgoing,
+        zapRequest,
         zapSign,
         zapPublish,
-        payRequest
     };
 };

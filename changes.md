@@ -1,5 +1,18 @@
 ## CoinExams Lightning Payment SDK - Change Log
 
+## v1.0.6
+
+- **API renaming for consistency** — all client methods now use descriptive, consistent names:
+  - `newInvoice` → `invoiceNew`
+  - `checkInvoice` → `invoiceStatus`
+  - `payInvoice` → `fundsWithdraw`
+  - `nodeQuery` → `fundsData`
+  - `payRequest` → `zapRequest`
+- **New funds methods** — `fundsBalance()`, `fundsIncoming(count?)`, `fundsOutgoing(count?)` wrap `fundsData` for common queries.
+- **Removed `payment.ts`** — stateless functional wrappers (`createInvoice`, `checkPayment`, `sendPayment`, etc.) removed in favor of direct client methods.
+- **Renamed `lightningAddressRegex` → `isLightningAddress`** — exported regex renamed for consistency.
+- **Renamed types** — `PayRequest` → `ZapRequest`, `PayRequestResponse` → `ZapRequestResponse`.
+
 ## v1.0.5
 
 - **New exports `npubToHex`, `nsecToHex`, `hexToBytes`, `nsecToBytes`** — Nostr key format conversion utilities added to `utils.ts`.
