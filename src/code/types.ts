@@ -14,11 +14,13 @@ interface PaymentMakeRequest {
     amountSat: number;
     address: string;
     feeRateSatByte?: number;
+    maxTime?: number;
 }
 
 interface PaymentNewRequest {
     amountSat: number;
     description?: string;
+    maxTime?: number;
 }
 
 interface PaymentInvoiceDetails {
@@ -59,6 +61,14 @@ interface LNDataParams {
 interface LNDataRequest {
     type: string;
     params?: Record<string, string | number>;
+    maxTime?: number;
+}
+
+interface NodeCLIRequest {
+    path: string;
+    method: `GET` | `POST`;
+    params?: Record<string, string | number>;
+    maxTime?: number;
 }
 
 interface LNBalance {
@@ -229,6 +239,7 @@ export type {
     PaymentCheck,
     LNDataParams,
     LNDataRequest,
+    NodeCLIRequest,
     LNBalance,
     IncomingPayment,
     OutgoingPaymentBase,

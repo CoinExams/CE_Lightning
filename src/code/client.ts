@@ -15,6 +15,7 @@ import {
     PaymentDoneResponse,
     NewInvoiceResponse,
     LNDataRequest,
+    NodeCLIRequest,
     LightningClient,
     LNBalance,
     LnurlPayResponse,
@@ -58,27 +59,31 @@ export const startLightning = ({
         phoenixConfig = readPhoenixConfig();
     if (phoenixConfig?.port == undefined) return;
 
+    let stallCount = 0;
+
     const
         { port, password } = phoenixConfig,
         API_URL = `http://localhost:${port}`,
         cache: { [query: string]: { time: number; data: CacheData } } = {},
-        nodeCLI = <T>(
-            path: string,
-            method: `GET` | `POST`,
-            data?: Record<string, string | number>
-        ): T | undefined => {
+        nodeCLI = <T>({
+            path,
+            method,
+            params,
+            maxTime = 1,
+        }: NodeCLIRequest): T | undefined => {
             try {
-                const args = [`-s`, `-u`, `:${password}`, `-X`, method];
+                const args = [`-s`, `--max-time`, maxTime.toFixed(0), `-u`, `:${password}`, `-X`, method];
                 let url = `${API_URL}${path}`;
-                if (data) {
+                if (params) {
                     const body = new URLSearchParams(
-                        Object.fromEntries(Object.entries(data)?.map(([k, v]) => [k, String(v)]))
+                        Object.fromEntries(Object.entries(params)?.map(([k, v]) => [k, String(v)]))
                     ).toString();
                     if (method == `GET`) url += `?${body}`;
                     else args.push(`-d`, body);
                 };
                 args.push(url);
                 const response = execFileSync(`curl`, args).toString();
+                stallCount = 0;
                 return (
                     response?.startsWith(`{`)
                         || response?.startsWith(`[`)
@@ -86,17 +91,36 @@ export const startLightning = ({
                         : response
                 ) as T | undefined;
             } catch (error) {
+                const isTimeout = error instanceof Error
+                    && (error as { status?: number }).status === 28;
+                if (isTimeout) {
+                    stallCount++;
+                    if (stallCount >= 2) {
+                        console.error(
+                            seoDt(),
+                            `phoenixd stalled twice — run: systemctl restart phoenixd`
+                        );
+                        stallCount = 0;
+                    };
+                };
                 console.error(seoDt(), `Lightning node ${path} failed:`, error instanceof Error ? error.message : String(error));
             };
         },
+        /** Create a new lightning invoice. est < 42ms */
         invoiceNew = ({
             amountSat,
             description = ``,
+            maxTime,
         }: PaymentNewRequest): PaymentInvoiceDetails | undefined => {
             try {
-                const result = nodeCLI<NewInvoiceResponse>(`/createinvoice`, `POST`, {
-                    amountSat,
-                    description,
+                const result = nodeCLI<NewInvoiceResponse>({
+                    path: `/createinvoice`,
+                    method: `POST`,
+                    params: {
+                        amountSat,
+                        description,
+                    },
+                    maxTime,
                 });
                 if (result?.serialized)
                     return {
@@ -111,18 +135,24 @@ export const startLightning = ({
             amountSat,
             address,
             feeRateSatByte = 5,
+            maxTime,
         }: PaymentMakeRequest): SentPayment | undefined => {
             try {
                 if (typeof amountSat != `number` || !address) return;
                 const
                     isLightning = isLightningAddress.test(address),
                     command = isLightning ? `paylnaddress` : `sendtoaddress`,
-                    result = nodeCLI<PaymentDoneResponse>(`/${command}`, `POST`, {
-                        address,
-                        amountSat,
-                        ...isLightning ? {} : {
-                            feerateSatByte: feeRateSatByte,
+                    result = nodeCLI<PaymentDoneResponse>({
+                        path: `/${command}`,
+                        method: `POST`,
+                        params: {
+                            address,
+                            amountSat,
+                            ...isLightning ? {} : {
+                                feerateSatByte: feeRateSatByte,
+                            },
                         },
+                        maxTime,
                     });
                 if (result?.recipientAmountSat)
                     return result;
@@ -133,6 +163,7 @@ export const startLightning = ({
         fundsData = <T extends CacheData>({
             type,
             params,
+            maxTime,
         }: LNDataRequest): T | undefined => {
             try {
 
@@ -145,7 +176,12 @@ export const startLightning = ({
                 if (cache[key] && cache[key].time > (time - cacheDurationMs))
                     return cache[key].data as T;
 
-                const data = nodeCLI<T>(`/${type}`, `GET`, params as Record<string, string | number>);
+                const data = nodeCLI<T>({
+                    path: `/${type}`,
+                    method: `GET`,
+                    params,
+                    maxTime,
+                });
                 if (data) cache[key] = { time, data };
                 return data;
             } catch (e) {
@@ -166,21 +202,25 @@ export const startLightning = ({
                 console.error(seoDt(), `invoiceStatus failed`, e);
             };
         },
+        /** Fetch on-chain + lightning balances. est < 16ms */
         fundsBalance = (): LNBalance | undefined =>
             fundsData<LNBalance>({ type: `getbalance` }),
 
+        /** List recent incoming payments. est < 52ms */
         fundsIncoming = (count = 30): IncomingPayment[] | undefined =>
             fundsData<(IncomingPayment | OutgoingPayment)[]>({
                 type: `payments/incoming`,
                 params: { limit: count },
             }) as IncomingPayment[] | undefined,
 
+        /** List recent outgoing payments. est < 25ms */
         fundsOutgoing = (count = 30): OutgoingPayment[] | undefined =>
             fundsData<(IncomingPayment | OutgoingPayment)[]>({
                 type: `payments/outgoing`,
                 params: { limit: count },
             }) as OutgoingPayment[] | undefined,
 
+        /** Sign a kind-9735 zap receipt locally. est < 66ms (no node call) */
         zapSign = ({
             nostr,
             bolt11,
@@ -216,6 +256,7 @@ export const startLightning = ({
                 console.error(seoDt(), `zapSign failed`, e);
             };
         },
+        /** Publish a kind-9735 receipt to relays after payment. est < 52ms/poll + relay latency */
         zapPublish = async ({
             nostr,
             bolt11,
@@ -263,6 +304,7 @@ export const startLightning = ({
                 console.error(seoDt(), `zapPublish failed`, e);
             };
         },
+        /** Request a zap invoice (createinvoice + sign). est < 108ms */
         zapRequest = ({
             lnAddress,
             amountMsat,
@@ -294,6 +336,7 @@ export const startLightning = ({
 
             return { invoice, invoiceId };
         },
+        /** Full zap flow: request invoice + publish receipt on payment. est < 108ms + async publish */
         zapProcess = ({
             lnAddress,
             amountMsat,

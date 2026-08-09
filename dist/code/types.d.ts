@@ -11,10 +11,12 @@ interface PaymentMakeRequest {
     amountSat: number;
     address: string;
     feeRateSatByte?: number;
+    maxTime?: number;
 }
 interface PaymentNewRequest {
     amountSat: number;
     description?: string;
+    maxTime?: number;
 }
 interface PaymentInvoiceDetails {
     invoiceString: string;
@@ -41,6 +43,13 @@ interface LNDataParams {
 interface LNDataRequest {
     type: string;
     params?: Record<string, string | number>;
+    maxTime?: number;
+}
+interface NodeCLIRequest {
+    path: string;
+    method: `GET` | `POST`;
+    params?: Record<string, string | number>;
+    maxTime?: number;
 }
 interface LNBalance {
     balanceSat: number;
@@ -169,4 +178,4 @@ interface UserSeverData {
 }
 type CacheData = LNBalance | NewInvoiceResponse | PaymentDoneResponse | (IncomingPayment | OutgoingPayment)[] | NodeInfo | SentPayment | string;
 export { PaymentDirection, LNDataType, };
-export type { PhoenixConfig, PhoenixSetupOptions, CacheData, PaymentMakeRequest, PaymentNewRequest, PaymentInvoiceDetails, PaymentCheck, LNDataParams, LNDataRequest, LNBalance, IncomingPayment, OutgoingPaymentBase, OutgoingPayment, OutgoingPaymentLiquidity, NodeInfo, SentPayment, PaymentDoneResponse, NewInvoiceResponse, LightningClient, LnurlPayRequest, LnurlPayResponse, UserStoredPayment, UserSeverData, ZapSignRequest, ZapSignResponse, ZapPublishRequest, ZapRequest, ZapRequestResponse, };
+export type { PhoenixConfig, PhoenixSetupOptions, CacheData, PaymentMakeRequest, PaymentNewRequest, PaymentInvoiceDetails, PaymentCheck, LNDataParams, LNDataRequest, NodeCLIRequest, LNBalance, IncomingPayment, OutgoingPaymentBase, OutgoingPayment, OutgoingPaymentLiquidity, NodeInfo, SentPayment, PaymentDoneResponse, NewInvoiceResponse, LightningClient, LnurlPayRequest, LnurlPayResponse, UserStoredPayment, UserSeverData, ZapSignRequest, ZapSignResponse, ZapPublishRequest, ZapRequest, ZapRequestResponse, };

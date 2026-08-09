@@ -1,5 +1,10 @@
 ## CoinExams Lightning Payment SDK - Change Log
 
+## v1.1.1
+
+- **Optional `maxTime` parameter** — `invoiceNew`, `fundsWithdraw`, and `fundsData` (and their request types) accept an optional `maxTime` (seconds) to cap the curl request to phoenixd; defaults to 1s.
+- **Stall detection** — after two consecutive request timeouts, the SDK logs a recommendation to run `systemctl restart phoenixd`, then resets the stall counter.
+
 ## v1.0.8
 
 - Run `npx @coinexams/lightning setup` to auto-install, configure, and start phoenixd. Supports `--seed` and `--port` flags.
