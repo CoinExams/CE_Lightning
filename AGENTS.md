@@ -45,6 +45,11 @@
 - Never rename functions under older package version entries in `changes.md`
 - Always add new version entry at the top of `changes.md`
 - `changes.md` entries describe only user-facing changes — never internal implementation details
+- Only add a `changes.md` entry when the change requires action from developers using the package; skip entries for internal changes that need no developer changes
+- Version format is `X.Y.Z` (semver). To pump the version, edit only the `version` field in `package.json`:
+  - Patch (`Z`) — internal fixes and small changes (no developer action)
+  - Minor (`Y`) — new user-facing features or API changes
+  - Major (`X`) — breaking API changes
 - Update `README.md` examples to match current API
 - Never stage changes with `git add`; keep all modifications unstaged
 - Never run `npm run build` or any build command

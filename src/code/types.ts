@@ -219,6 +219,8 @@ type CacheData =
     | LNBalance
     | NewInvoiceResponse
     | PaymentDoneResponse
+    | IncomingPayment
+    | OutgoingPayment
     | (IncomingPayment | OutgoingPayment)[]
     | NodeInfo
     | SentPayment

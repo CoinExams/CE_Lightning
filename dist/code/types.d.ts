@@ -176,6 +176,6 @@ interface UserSeverData {
     username: string;
     payments: UserStoredPayment[];
 }
-type CacheData = LNBalance | NewInvoiceResponse | PaymentDoneResponse | (IncomingPayment | OutgoingPayment)[] | NodeInfo | SentPayment | string;
+type CacheData = LNBalance | NewInvoiceResponse | PaymentDoneResponse | IncomingPayment | OutgoingPayment | (IncomingPayment | OutgoingPayment)[] | NodeInfo | SentPayment | string;
 export { PaymentDirection, LNDataType, };
 export type { PhoenixConfig, PhoenixSetupOptions, CacheData, PaymentMakeRequest, PaymentNewRequest, PaymentInvoiceDetails, PaymentCheck, LNDataParams, LNDataRequest, NodeCLIRequest, LNBalance, IncomingPayment, OutgoingPaymentBase, OutgoingPayment, OutgoingPaymentLiquidity, NodeInfo, SentPayment, PaymentDoneResponse, NewInvoiceResponse, LightningClient, LnurlPayRequest, LnurlPayResponse, UserStoredPayment, UserSeverData, ZapSignRequest, ZapSignResponse, ZapPublishRequest, ZapRequest, ZapRequestResponse, };

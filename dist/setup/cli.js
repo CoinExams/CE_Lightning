@@ -12744,7 +12744,7 @@ const USAGE = [
     }
     ;
     if (subcmd === `--version` || subcmd === `-v`) {
-        console.log("1.1.1");
+        console.log("1.1.2");
         process.exit(0);
     }
     ;

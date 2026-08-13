@@ -193,11 +193,12 @@ export const startLightning = ({
             type,
         }: PaymentCheck): IncomingPayment | OutgoingPayment | undefined => {
             try {
-                const txs = fundsData<(IncomingPayment | OutgoingPayment)[]>({
-                    type: `payments/${type}`,
-                    params: { limit: 30 },
+                const path = type == PaymentDirection.Incoming
+                    ? `payments/incoming/${invoiceId}`
+                    : `payments/outgoingbyhash/${invoiceId}`;
+                return fundsData<IncomingPayment | OutgoingPayment>({
+                    type: path,
                 });
-                return txs?.find(tx => tx?.paymentHash == invoiceId);
             } catch (e) {
                 console.error(seoDt(), `invoiceStatus failed`, e);
             };
