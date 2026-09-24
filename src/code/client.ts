@@ -38,6 +38,7 @@ import {
     RELAYS_LIST,
 } from "./utils";
 import { readPhoenixConfig } from "../setup/config";
+import { requestPhoenixRestart } from "../setup/restart";
 
 /** Create a LightningClient that talks to a local Phoenixd node.
  * Assumes phoenixd is already installed and running (use
@@ -113,20 +114,36 @@ export const startLightning = ({
             maxTime,
         }: PaymentNewRequest): PaymentInvoiceDetails | undefined => {
             try {
-                const result = nodeCLI<NewInvoiceResponse>({
-                    path: `/createinvoice`,
-                    method: `POST`,
-                    params: {
-                        amountSat,
-                        description,
-                    },
-                    maxTime,
-                });
-                if (result?.serialized)
-                    return {
-                        invoiceString: result.serialized,    // The "lnbc..." invoice string
-                        invoiceId: result.paymentHash,   // Use this to check status later
-                    };
+                // reject invalid input
+                if (typeof amountSat != `number`
+                    || !Number.isInteger(amountSat)
+                    || amountSat <= 0
+                ) return;
+
+                const create = (): PaymentInvoiceDetails | undefined => {
+                    const result = nodeCLI<NewInvoiceResponse>({
+                        path: `/createinvoice`,
+                        method: `POST`,
+                        params: {
+                            amountSat,
+                            description,
+                        },
+                        maxTime,
+                    });
+                    if (result?.serialized)
+                        return {
+                            invoiceString: result.serialized,    // The "lnbc..." invoice string
+                            invoiceId: result.paymentHash,   // check status later
+                        };
+                };
+
+                const first = create();
+                if (first) return first;
+
+                // restart, wait, retry
+                if (requestPhoenixRestart() != true) return;
+
+                return create();
             } catch (e) {
                 console.error(seoDt(), `invoiceNew failed`, e);
             };

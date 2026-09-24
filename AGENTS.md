@@ -3,14 +3,16 @@
 ## Style & Conventions
 - Use backtick template literals for all strings (no single/double quotes)
 - Use `const` for all declarations; avoid `let`/`var`
-- Chain all `const` declarations into a single statement with comma separators
+- Chain all `const` and `let` declarations into a single statement with comma separators
+- Keep comments to 3 words max
+- Never use exact `===`/`!==` to compare strings; use loose `==`/`!=`
 - Export at declaration site or use `export { ... }` at bottom of file
 - Keep lines short and readable; group related logic with blank lines
 - Keep code narrow and readable — prefer concise patterns that fit in limited width
 - Break lines aggressively so each line is readable on very narrow screens (~30 chars)
   - Split imports across lines: one name per line
   - Break long arg lists, ternaries, and method chains onto separate lines
-  - Use chained const with each binding starting on a new line
+  - Use chained const/let with each binding starting on a new line
   - Template literal content (shell scripts, file contents) is exempt
 - Use early returns (`if (!x) return;`) over nested braces
 

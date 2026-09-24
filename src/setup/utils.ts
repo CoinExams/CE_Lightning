@@ -148,6 +148,7 @@ const
 export {
     run,
     execRoot,
+    sleepSync,
     rootFileExists,
     readRootFile,
     writeRootFile,

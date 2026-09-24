@@ -203,6 +203,36 @@ interface LnurlPayResponse {
     routes: object[];
 }
 
+enum RestartStatus {
+    Idle = `idle`,
+    Restarting = `restarting`,
+}
+
+enum RestartEventType {
+    Start = `start`,
+    Done = `done`,
+    Override = `override`,
+    Skip = `skip`,
+    RateLimited = `rate-limited`,
+    Failed = `failed`,
+}
+
+interface RestartEvent {
+    time: number;
+    pid: number;
+    event: RestartEventType;
+}
+
+interface RestartLog {
+    status: RestartStatus;
+    pid: number;
+    startedAt: number;
+    lastRestartAt: number;
+    restartCount: number;
+    windowStart: number;
+    events: RestartEvent[];
+}
+
 interface UserStoredPayment {
     text: string;
     sats: number;
@@ -229,6 +259,8 @@ type CacheData =
 export {
     PaymentDirection,
     LNDataType,
+    RestartStatus,
+    RestartEventType,
 };
 
 export type {
@@ -254,6 +286,8 @@ export type {
     LightningClient,
     LnurlPayRequest,
     LnurlPayResponse,
+    RestartEvent,
+    RestartLog,
     UserStoredPayment,
     UserSeverData,
     ZapSignRequest,

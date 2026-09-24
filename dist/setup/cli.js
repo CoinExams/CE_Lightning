@@ -398,8 +398,8 @@ exports.saveCredentials = saveCredentials;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.buildServiceConfig = exports.SERVICE_CHECK_SLEEP = exports.SERVICE_CHECK_RETRIES = exports.HEALTH_SLEEP = exports.HEALTH_RETRIES = exports.LOCK_FILE = exports.OUTPUT_FILE = exports.CONF_PATH = exports.BACKUP_DIR = exports.VERSION_FILE = exports.BINARY_PATH = exports.INSTALL_DIR = exports.DATADIR = exports.BIND_IP = exports.PORT = exports.PHOENIX_VERSION = void 0;
-const PHOENIX_VERSION = `0.9.0`, PORT = 9740, BIND_IP = `127.0.0.1`, DATADIR = `/root/.phoenix`, INSTALL_DIR = `/opt/phoenix-setup`, BINARY_PATH = `${INSTALL_DIR}/phoenixd`, VERSION_FILE = `${INSTALL_DIR}/.version`, BACKUP_DIR = `${INSTALL_DIR}/backups`, CONF_PATH = `${DATADIR}/phoenix.conf`, OUTPUT_FILE = `${DATADIR}/credentials.json`, LOCK_FILE = `${INSTALL_DIR}/.lock`, HEALTH_RETRIES = 10, HEALTH_SLEEP = 1, SERVICE_CHECK_RETRIES = 20, SERVICE_CHECK_SLEEP = 1, buildServiceConfig = (port) => `[Unit]
+exports.buildServiceConfig = exports.SERVICE_CHECK_SLEEP = exports.SERVICE_CHECK_RETRIES = exports.HEALTH_SLEEP = exports.HEALTH_RETRIES = exports.RESTART_EVENTS_MAX = exports.RESTART_POLL_MS = exports.RESTART_SETTLE_MS = exports.RESTART_STALE_MS = exports.RESTART_WINDOW_MS = exports.RESTART_MAX = exports.RESTART_LOG_FILE = exports.LOCK_FILE = exports.OUTPUT_FILE = exports.CONF_PATH = exports.BACKUP_DIR = exports.VERSION_FILE = exports.BINARY_PATH = exports.INSTALL_DIR = exports.DATADIR = exports.BIND_IP = exports.PORT = exports.PHOENIX_VERSION = void 0;
+const PHOENIX_VERSION = `0.9.0`, PORT = 9740, BIND_IP = `127.0.0.1`, DATADIR = `/root/.phoenix`, INSTALL_DIR = `/opt/phoenix-setup`, BINARY_PATH = `${INSTALL_DIR}/phoenixd`, VERSION_FILE = `${INSTALL_DIR}/.version`, BACKUP_DIR = `${INSTALL_DIR}/backups`, CONF_PATH = `${DATADIR}/phoenix.conf`, OUTPUT_FILE = `${DATADIR}/credentials.json`, LOCK_FILE = `${INSTALL_DIR}/.lock`, RESTART_LOG_FILE = `${DATADIR}/lightning-restart.json`, RESTART_MAX = 3, RESTART_WINDOW_MS = 10 * 60 * 1000, RESTART_STALE_MS = 20 * 1000, RESTART_SETTLE_MS = 5 * 1000, RESTART_POLL_MS = 250, RESTART_EVENTS_MAX = 50, HEALTH_RETRIES = 10, HEALTH_SLEEP = 1, SERVICE_CHECK_RETRIES = 20, SERVICE_CHECK_SLEEP = 1, buildServiceConfig = (port) => `[Unit]
 Description=Phoenixd Lightning Service
 After=network.target
 
@@ -424,11 +424,63 @@ exports.BACKUP_DIR = BACKUP_DIR;
 exports.CONF_PATH = CONF_PATH;
 exports.OUTPUT_FILE = OUTPUT_FILE;
 exports.LOCK_FILE = LOCK_FILE;
+exports.RESTART_LOG_FILE = RESTART_LOG_FILE;
+exports.RESTART_MAX = RESTART_MAX;
+exports.RESTART_WINDOW_MS = RESTART_WINDOW_MS;
+exports.RESTART_STALE_MS = RESTART_STALE_MS;
+exports.RESTART_SETTLE_MS = RESTART_SETTLE_MS;
+exports.RESTART_POLL_MS = RESTART_POLL_MS;
+exports.RESTART_EVENTS_MAX = RESTART_EVENTS_MAX;
 exports.HEALTH_RETRIES = HEALTH_RETRIES;
 exports.HEALTH_SLEEP = HEALTH_SLEEP;
 exports.SERVICE_CHECK_RETRIES = SERVICE_CHECK_RETRIES;
 exports.SERVICE_CHECK_SLEEP = SERVICE_CHECK_SLEEP;
 exports.buildServiceConfig = buildServiceConfig;
+
+
+/***/ }),
+
+/***/ 702:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.waitForPhoenixd = void 0;
+const node_child_process_1 = __webpack_require__(421);
+const config_1 = __webpack_require__(78);
+const constants_1 = __webpack_require__(619);
+const utils_1 = __webpack_require__(239);
+const progress_1 = __webpack_require__(479);
+const 
+/** Wait for phoenixd. */
+waitForPhoenixd = (verbose = false) => {
+    for (let i = 0; i < constants_1.HEALTH_RETRIES; i++) {
+        if (verbose)
+            (0, progress_1.updateInline)(`Waiting for phoenixd to be ready`
+                + ` (${i + 1}/${constants_1.HEALTH_RETRIES})...`);
+        const phoenixConfig = (0, config_1.readPhoenixConfig)();
+        // config required
+        if (phoenixConfig) {
+            try {
+                (0, node_child_process_1.execFileSync)(`pgrep`, [`-x`, `phoenixd`], { stdio: `ignore` });
+                (0, node_child_process_1.execFileSync)(`curl`, [
+                    `-s`,
+                    `-f`,
+                    `-u`, `:${phoenixConfig.password}`,
+                    `http://localhost:${phoenixConfig.port}/getinfo`,
+                ], { stdio: `ignore` });
+                return true;
+            }
+            catch { }
+            ;
+        }
+        ;
+        (0, utils_1.sleepSync)(constants_1.HEALTH_SLEEP);
+    }
+    ;
+    return false;
+};
+exports.waitForPhoenixd = waitForPhoenixd;
 
 
 /***/ }),
@@ -447,6 +499,7 @@ const utils_2 = __webpack_require__(239);
 const config_1 = __webpack_require__(78);
 const version_1 = __webpack_require__(46);
 const progress_1 = __webpack_require__(479);
+const health_1 = __webpack_require__(702);
 const semverLt = (a, b) => {
     const pa = a.replace(/^v/i, ``).split(`.`).map(Number), pb = b.replace(/^v/i, ``).split(`.`).map(Number);
     for (let i = 0; i < 3; i++) {
@@ -609,26 +662,7 @@ ensurePhoenixd = ({ seedPhrase, port = constants_1.PORT, } = {}) => {
             (0, progress_1.logStep)(`Starting phoenixd...`);
             (0, utils_2.run)(`systemctl`, `enable`, `--now`, `phoenixd`);
             // health check - verify phoenixd started and API is ready
-            const started = (() => {
-                for (let i = 0; i < constants_1.HEALTH_RETRIES; i++) {
-                    (0, progress_1.updateInline)(`Waiting for phoenixd to be ready`
-                        + ` (${i + 1}/${constants_1.HEALTH_RETRIES})...`);
-                    const phxConfig = (0, config_1.readPhoenixConfig)();
-                    try {
-                        (0, node_child_process_1.execFileSync)(`pgrep`, [`-x`, `phoenixd`], { stdio: `ignore` });
-                        if (phxConfig)
-                            (0, node_child_process_1.execFileSync)(`curl`, [`-s`, `-u`, `:${phxConfig.password}`,
-                                `http://localhost:${phxConfig.port}/getinfo`
-                            ], { stdio: `ignore` });
-                        return true;
-                    }
-                    catch { }
-                    ;
-                    (0, node_child_process_1.execFileSync)(`sleep`, [String(constants_1.HEALTH_SLEEP)], { stdio: `ignore` });
-                }
-                ;
-                return false;
-            })();
+            const started = (0, health_1.waitForPhoenixd)(true);
             if (!started) {
                 console.error((0, utils_1.seoDt)(), `ensurePhoenixd failed`, `phoenixd did not start or API not ready`);
                 return;
@@ -685,7 +719,7 @@ exports.updateInline = updateInline;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.serviceCheck = exports.releaseLock = exports.acquireLock = exports.appendRootFile = exports.writeRootFile = exports.readRootFile = exports.rootFileExists = exports.execRoot = exports.run = void 0;
+exports.serviceCheck = exports.releaseLock = exports.acquireLock = exports.appendRootFile = exports.writeRootFile = exports.readRootFile = exports.rootFileExists = exports.sleepSync = exports.execRoot = exports.run = void 0;
 const node_child_process_1 = __webpack_require__(421);
 const utils_1 = __webpack_require__(805);
 const constants_1 = __webpack_require__(619);
@@ -795,6 +829,7 @@ const needsSudo = process.getuid !== undefined
 };
 exports.run = run;
 exports.execRoot = execRoot;
+exports.sleepSync = sleepSync;
 exports.rootFileExists = rootFileExists;
 exports.readRootFile = readRootFile;
 exports.writeRootFile = writeRootFile;
@@ -12744,7 +12779,7 @@ const USAGE = [
     }
     ;
     if (subcmd === `--version` || subcmd === `-v`) {
-        console.log("1.1.2");
+        console.log("1.1.3");
         process.exit(0);
     }
     ;

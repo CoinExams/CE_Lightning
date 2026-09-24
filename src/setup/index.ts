@@ -18,8 +18,6 @@ import {
     OUTPUT_FILE,
     buildServiceConfig,
     PORT,
-    HEALTH_RETRIES,
-    HEALTH_SLEEP,
 } from "./constants";
 import {
     run,
@@ -35,10 +33,8 @@ import {
     saveCredentials,
 } from "./config";
 import { readInstalledVersion } from "./version";
-import {
-    logStep,
-    updateInline,
-} from "./progress";
+import { logStep } from "./progress";
+import { waitForPhoenixd } from "./health";
 
 const
     semverLt = (a: string, b: string): boolean => {
@@ -263,24 +259,7 @@ const
                 run(`systemctl`, `enable`, `--now`, `phoenixd`);
 
                 // health check - verify phoenixd started and API is ready
-                const started = (() => {
-                    for (let i = 0; i < HEALTH_RETRIES; i++) {
-                        updateInline(
-                            `Waiting for phoenixd to be ready`
-                            + ` (${i + 1}/${HEALTH_RETRIES})...`
-                        );
-                        const phxConfig = readPhoenixConfig();
-                        try {
-                            execFileSync(`pgrep`, [`-x`, `phoenixd`], { stdio: `ignore` });
-                            if (phxConfig) execFileSync(`curl`, [`-s`, `-u`, `:${phxConfig.password}`,
-                                `http://localhost:${phxConfig.port}/getinfo`
-                            ], { stdio: `ignore` });
-                            return true;
-                        } catch {};
-                        execFileSync(`sleep`, [String(HEALTH_SLEEP)], { stdio: `ignore` });
-                    };
-                    return false;
-                })();
+                const started = waitForPhoenixd(true);
 
                 if (!started) {
                     console.error(

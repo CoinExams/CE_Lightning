@@ -166,6 +166,32 @@ interface LnurlPayResponse {
     pr: string;
     routes: object[];
 }
+declare enum RestartStatus {
+    Idle = "idle",
+    Restarting = "restarting"
+}
+declare enum RestartEventType {
+    Start = "start",
+    Done = "done",
+    Override = "override",
+    Skip = "skip",
+    RateLimited = "rate-limited",
+    Failed = "failed"
+}
+interface RestartEvent {
+    time: number;
+    pid: number;
+    event: RestartEventType;
+}
+interface RestartLog {
+    status: RestartStatus;
+    pid: number;
+    startedAt: number;
+    lastRestartAt: number;
+    restartCount: number;
+    windowStart: number;
+    events: RestartEvent[];
+}
 interface UserStoredPayment {
     text: string;
     sats: number;
@@ -177,5 +203,5 @@ interface UserSeverData {
     payments: UserStoredPayment[];
 }
 type CacheData = LNBalance | NewInvoiceResponse | PaymentDoneResponse | IncomingPayment | OutgoingPayment | (IncomingPayment | OutgoingPayment)[] | NodeInfo | SentPayment | string;
-export { PaymentDirection, LNDataType, };
-export type { PhoenixConfig, PhoenixSetupOptions, CacheData, PaymentMakeRequest, PaymentNewRequest, PaymentInvoiceDetails, PaymentCheck, LNDataParams, LNDataRequest, NodeCLIRequest, LNBalance, IncomingPayment, OutgoingPaymentBase, OutgoingPayment, OutgoingPaymentLiquidity, NodeInfo, SentPayment, PaymentDoneResponse, NewInvoiceResponse, LightningClient, LnurlPayRequest, LnurlPayResponse, UserStoredPayment, UserSeverData, ZapSignRequest, ZapSignResponse, ZapPublishRequest, ZapRequest, ZapRequestResponse, };
+export { PaymentDirection, LNDataType, RestartStatus, RestartEventType, };
+export type { PhoenixConfig, PhoenixSetupOptions, CacheData, PaymentMakeRequest, PaymentNewRequest, PaymentInvoiceDetails, PaymentCheck, LNDataParams, LNDataRequest, NodeCLIRequest, LNBalance, IncomingPayment, OutgoingPaymentBase, OutgoingPayment, OutgoingPaymentLiquidity, NodeInfo, SentPayment, PaymentDoneResponse, NewInvoiceResponse, LightningClient, LnurlPayRequest, LnurlPayResponse, RestartEvent, RestartLog, UserStoredPayment, UserSeverData, ZapSignRequest, ZapSignResponse, ZapPublishRequest, ZapRequest, ZapRequestResponse, };
